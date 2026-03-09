@@ -1,0 +1,4 @@
+cd d EBankAssetBackend
+call venvScriptsactivate
+python manage.py runserver
+pause

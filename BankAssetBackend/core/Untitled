@@ -1,0 +1,20 @@
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+
+
+class User(AbstractUser):
+    ROLE_CHOICES = [
+        ("SUPER_ADMIN", "Super Admin"),
+        ("LOCATION_ADMIN", "Location Admin"),
+        ("BANK_EMPLOYEE", "Bank Employee"),
+        ("THIRD_PARTY_OPERATOR", "Third Party Operator"),
+    ]
+
+    role = models.CharField(
+        max_length=50,
+        choices=ROLE_CHOICES,
+        default="THIRD_PARTY_OPERATOR"
+    )
+
+    def __str__(self):
+        return self.username
