@@ -71,12 +71,18 @@ class AssetSerializer(serializers.ModelSerializer):
     Field names follow the camelCase convention expected by React.
     """
 
-    assetId = serializers.CharField(source="asset_id")
+    assetId = serializers.CharField(source="asset_id", allow_blank=True, allow_null=True)
     serialNumber = serializers.CharField(source="serial_number", allow_blank=True)
-    tagNumber = serializers.CharField(source="asset_tag")
-    category = serializers.CharField()
-    locationId = serializers.IntegerField(source="location.id", read_only=True)
-    locationName = serializers.CharField(source="location.name", read_only=True)
+    tagNumber = serializers.CharField(source="asset_tag", allow_blank=True, allow_null=True)
+    category = serializers.CharField(allow_blank=True)
+    locationId = serializers.SerializerMethodField()
+    locationName = serializers.SerializerMethodField()
+
+    def get_locationId(self, obj):
+        return obj.location_id if obj.location_id else None
+
+    def get_locationName(self, obj):
+        return obj.location.name if obj.location else ""
     locationBreadcrumb = serializers.CharField(
         source="location_breadcrumb",
         allow_blank=True,
@@ -198,10 +204,10 @@ class ReconciliationSubmissionSerializer(serializers.ModelSerializer):
 
 
 class ThirdPartySubmissionSerializer(serializers.ModelSerializer):
-    assetId = serializers.CharField(
-        source="asset.asset_id",
-        read_only=True,
-    )
+    assetId = serializers.SerializerMethodField()
+
+    def get_assetId(self, obj):
+        return obj.asset.asset_id if obj.asset else None
     assetName = serializers.CharField(
         source="asset_name",
         allow_blank=True,
