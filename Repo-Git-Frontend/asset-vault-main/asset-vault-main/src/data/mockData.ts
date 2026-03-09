@@ -272,8 +272,13 @@ export function getNodeById(id: string): LocationNode | undefined {
 }
 
 const categories = ['Computer', 'Furniture', 'Vehicle', 'Networking', 'Security', 'Office Equipment', 'ATM', 'Safe Deposit'];
+const subAssetTypes = ['Desktop', 'Laptop', 'Chair', 'Desk', 'Sedan', 'Switch', 'CCTV', 'Printer', 'Cash Machine', 'Locker'];
+const entities = ['Admin Entity', 'Operations', 'Technology', 'HR', 'Finance', 'Compliance'];
+const subLocations = ['Main Hall', 'Server Room', 'Reception', 'Conference Room', 'Storage', 'Lobby'];
 const statuses: Asset['status'][] = ['active', 'active', 'active', 'in_transit', 'pending_verification', 'missing'];
 const reconStatuses: Asset['reconciliationStatus'][] = ['verified', 'verified', 'pending', 'discrepancy'];
+const currencies = ['INR', 'USD', 'EUR', 'GBP'];
+const suppliers = ['Dell Technologies', 'HP Inc.', 'Cisco Systems', 'Godrej', 'NCR Corporation', 'Honeywell'];
 
 const sampleBreadcrumbs = [
   'National Bank of India > India > West > Mumbai Zone > HQ Site > Admin Entity > Tower A > Wing B > Office Area > 3rd Floor > Unit 302 > Server Room',
@@ -289,6 +294,7 @@ function generateAssets(count: number): Asset[] {
     const cat = categories[i % categories.length];
     const status = statuses[i % statuses.length];
     const recon = reconStatuses[i % reconStatuses.length];
+    const pv = Math.floor(Math.random() * 500000) + 5000;
     assets.push({
       id: `ast-${String(i).padStart(6, '0')}`,
       assetId: `BANK-${String(i).padStart(6, '0')}`,
@@ -297,6 +303,9 @@ function generateAssets(count: number): Asset[] {
       name: `${cat} - Unit ${i}`,
       description: `${cat} asset located at ${loc.name}`,
       category: cat,
+      subAssetType: subAssetTypes[i % subAssetTypes.length],
+      entity: entities[i % entities.length],
+      subLocation: subLocations[i % subLocations.length],
       locationId: loc.id,
       locationName: loc.name,
       locationBreadcrumb: sampleBreadcrumbs[i % sampleBreadcrumbs.length],
@@ -305,10 +314,39 @@ function generateAssets(count: number): Asset[] {
       status,
       reconciliationStatus: recon,
       purchaseDate: `202${(i % 4)}-0${(i % 9) + 1}-${String((i % 28) + 1).padStart(2, '0')}`,
-      purchaseValue: Math.floor(Math.random() * 500000) + 5000,
+      purchaseValue: pv,
       lastVerified: recon === 'verified' ? '2025-12-15' : undefined,
       createdAt: '2023-01-15',
       updatedAt: '2025-11-20',
+      assetDetails: {
+        subNumber: `${i}-0`,
+        assetClass: `CLS-${String(i % 20).padStart(3, '0')}`,
+        costCenter: `CC-${String((i % 50) + 100).padStart(4, '0')}`,
+        intOrder: i % 3 === 0 ? `IO-${String(i).padStart(6, '0')}` : undefined,
+        assetDescription: `${cat} asset #${i}`,
+        usefulLife: `${5 + (i % 10)} years`,
+        usefulLifeInPeriods: `${(5 + (i % 10)) * 12}`,
+        supplier: suppliers[i % suppliers.length],
+        currency: currencies[i % currencies.length],
+        capitalizedOn: `202${i % 4}-01-01`,
+        apcFyStart: `₹${(pv * 0.95).toFixed(0)}`,
+        acquisition: `₹${pv.toFixed(0)}`,
+        currentApc: `₹${pv.toFixed(0)}`,
+        depFyStart: `₹${(pv * 0.1).toFixed(0)}`,
+        depForYear: `₹${(pv * 0.05).toFixed(0)}`,
+        accumulDep: `₹${(pv * 0.3).toFixed(0)}`,
+        bkValFyStart: `₹${(pv * 0.7).toFixed(0)}`,
+        currBkVal: `₹${(pv * 0.65).toFixed(0)}`,
+      },
+      wfhDetails: i % 5 === 0 ? {
+        serialNumber: `WFH-SN-${String(i).padStart(4, '0')}`,
+        location: 'Home Office',
+        entity: entities[i % entities.length],
+        asset: `BANK-${String(i).padStart(6, '0')}`,
+        uid: `UID-${String(i).padStart(4, '0')}`,
+        userName: 'Amit Patel',
+        userEmailId: 'employee@bank.com',
+      } : undefined,
     });
   }
   return assets;

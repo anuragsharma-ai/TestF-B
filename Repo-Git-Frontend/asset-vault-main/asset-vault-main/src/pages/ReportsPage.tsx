@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,62 +7,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Download, FileText, AlertTriangle, ClipboardList, Calendar } from 'lucide-react';
+import { mockAssets, mockLocations } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
-import api from '@/services/api';
-import { API_ENDPOINTS } from '@/config/api';
-import type { Asset } from '@/types';
 
 export default function ReportsPage() {
   const { toast } = useToast();
-  const [locationFilter, setLocationFilter] = useState<string>('all');
-
-  const { data: assets = [], isLoading } = useQuery<Asset[]>({
-    queryKey: ['assets'],
-    queryFn: async () => {
-      const { data } = await api.get<Asset[]>(API_ENDPOINTS.assets.list);
-      return data;
-    },
-  });
 
   const handleExport = (type: string) => {
     toast({ title: 'Export Started', description: `${type} report is being generated...` });
     setTimeout(() => toast({ title: 'Download Ready', description: 'Report has been downloaded.' }), 1500);
   };
 
-  const discrepancies = assets.filter((a) => a.reconciliationStatus === 'discrepancy').slice(0, 10);
-  const pendingAssets = assets.filter((a) => a.reconciliationStatus === 'pending').slice(0, 10);
-
-  const locations = Array.from(
-    new Map(
-      assets
-        .filter((a) => a.locationName)
-        .map((a) => [a.locationId, a.locationName]),
-    ).entries(),
-  ).map(([id, name]) => ({ id, name: name as string }));
-
-  const locationStats = (() => {
-    const map = new Map<
-      string,
-      { id: string | null; name: string; total: number; verified: number }
-    >();
-    for (const a of assets) {
-      const key = a.locationId != null ? String(a.locationId) : 'unassigned';
-      const name = a.locationName || 'Unassigned';
-      if (!map.has(key)) {
-        map.set(key, { id: a.locationId != null ? String(a.locationId) : null, name, total: 0, verified: 0 });
-      }
-      const entry = map.get(key)!;
-      entry.total += 1;
-      if (a.reconciliationStatus === 'verified') {
-        entry.verified += 1;
-      }
-    }
-    return Array.from(map.values());
-  })();
-
-  const locationRows = locationStats.filter((row) =>
-    locationFilter === 'all' ? true : row.id === locationFilter,
-  );
+  const discrepancies = mockAssets.filter((a) => a.reconciliationStatus === 'discrepancy').slice(0, 10);
+  const pendingAssets = mockAssets.filter((a) => a.reconciliationStatus === 'pending').slice(0, 10);
 
   return (
     <div className="p-4 md:p-6 space-y-4">
@@ -86,13 +42,11 @@ export default function ReportsPage() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2 mb-4">
-                <Select value={locationFilter} onValueChange={setLocationFilter}>
+                <Select defaultValue="all">
                   <SelectTrigger className="w-[160px]"><SelectValue placeholder="Location" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Locations</SelectItem>
-                    {locations.map((l) => l.id && (
-                      <SelectItem key={l.id} value={String(l.id)}>{l.name}</SelectItem>
-                    ))}
+                    {mockLocations.map((l) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <Input type="date" className="w-[160px]" />
@@ -110,16 +64,14 @@ export default function ReportsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {locationRows.map((loc) => (
-                      <TableRow key={loc.id || 'none'}>
+                    {mockLocations.map((loc) => (
+                      <TableRow key={loc.id}>
                         <TableCell className="font-medium">{loc.name}</TableCell>
-                        <TableCell>{loc.total}</TableCell>
-                        <TableCell className="text-success">{loc.verified}</TableCell>
-                        <TableCell className="text-warning">{loc.total - loc.verified}</TableCell>
+                        <TableCell>{loc.totalAssets}</TableCell>
+                        <TableCell className="text-success">{loc.verifiedAssets}</TableCell>
+                        <TableCell className="text-warning">{loc.totalAssets - loc.verifiedAssets}</TableCell>
                         <TableCell>
-                          <Badge variant="outline">
-                            {loc.total ? Math.round((loc.verified / loc.total) * 100) : 0}%
-                          </Badge>
+                          <Badge variant="outline">{Math.round((loc.verifiedAssets / loc.totalAssets) * 100)}%</Badge>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -186,17 +138,13 @@ export default function ReportsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {assets.slice(0, 10).map((a) => (
-                      <TableRow key={a.id}>
-                        <TableCell className="text-xs">{a.updatedAt || a.createdAt}</TableCell>
-                        <TableCell className="font-mono text-xs">{a.assetId}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className="text-xs">{a.reconciliationStatus}</Badge>
-                        </TableCell>
-                        <TableCell className="text-sm">{a.assignedToName || '—'}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {a.name} at {a.locationName || 'Unassigned'}
-                        </TableCell>
+                    {['Verified at Mumbai branch', 'Moved from Delhi to Mumbai', 'New asset registered', 'Status updated'].map((desc, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="text-xs">2025-12-{15 - i}</TableCell>
+                        <TableCell className="font-mono text-xs">BANK-{String(i + 1).padStart(6, '0')}</TableCell>
+                        <TableCell><Badge variant="secondary" className="text-xs">{['verified', 'moved', 'registered', 'updated'][i]}</Badge></TableCell>
+                        <TableCell className="text-sm">{['Amit', 'Priya', 'Rajesh', 'Priya'][i]}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{desc}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

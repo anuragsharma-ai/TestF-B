@@ -1,21 +1,14 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { mockAssets, generateMockHistory } from '@/data/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MapPin, User, Calendar, DollarSign, QrCode, Clock } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ArrowLeft, MapPin, User, Calendar, DollarSign, QrCode, Clock, FileText, Home, ChevronDown, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
-import api from '@/services/api';
-import { API_ENDPOINTS } from '@/config/api';
-import type { Asset } from '@/types';
-
-type AssetHistoryItem = {
-  id: string;
-  action: string;
-  changed_at: string;
-};
+import { useState } from 'react';
 
 const statusColors: Record<string, string> = {
   active: 'bg-success/10 text-success border-success/20',
@@ -35,38 +28,12 @@ export default function AssetDetailPage() {
   const isMobile = useIsMobile();
   const { user } = useAuth();
   const isThirdParty = user?.role === 'third_party';
+  const asset = mockAssets.find((a) => a.id === id);
+  const history = id ? generateMockHistory(id) : [];
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [wfhOpen, setWfhOpen] = useState(false);
 
-  const {
-    data: asset,
-    isLoading,
-    isError,
-  } = useQuery<Asset | null>({
-    queryKey: ['asset', id],
-    enabled: !!id,
-    queryFn: async () => {
-      const response = await api.get<Asset>(API_ENDPOINTS.assets.detail(id!));
-      return response.data;
-    },
-  });
-
-  const { data: history = [] } = useQuery<AssetHistoryItem[]>({
-    queryKey: ['asset-history', id],
-    enabled: !!id,
-    queryFn: async () => {
-      const response = await api.get<AssetHistoryItem[]>(API_ENDPOINTS.assets.history(id!));
-      return response.data;
-    },
-  });
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] p-4 text-center">
-        <p className="text-lg font-medium mb-2">Loading asset...</p>
-      </div>
-    );
-  }
-
-  if (isError || !asset) {
+  if (!asset) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-4 text-center">
         <p className="text-lg font-medium mb-2">Asset not found</p>
@@ -75,6 +42,7 @@ export default function AssetDetailPage() {
     );
   }
 
+  // Third-party: hide sensitive details
   const detailFields = isThirdParty
     ? [
         { icon: QrCode, label: 'Serial Number', value: asset.serialNumber },
@@ -84,7 +52,11 @@ export default function AssetDetailPage() {
     : [
         { icon: QrCode, label: 'Serial Number', value: asset.serialNumber },
         { icon: QrCode, label: 'Tag Number', value: asset.tagNumber },
+        { icon: MapPin, label: 'Entity', value: asset.entity || '—' },
+        { icon: MapPin, label: 'Asset Type', value: asset.category },
+        { icon: MapPin, label: 'Sub Asset Type', value: asset.subAssetType || '—' },
         { icon: MapPin, label: 'Location', value: asset.locationName },
+        { icon: MapPin, label: 'Sub Location', value: asset.subLocation || '—' },
         { icon: User, label: 'Assigned To', value: asset.assignedToName },
         { icon: Calendar, label: 'Purchase Date', value: asset.purchaseDate },
         { icon: DollarSign, label: 'Value', value: `₹${asset.purchaseValue.toLocaleString()}` },
@@ -98,9 +70,10 @@ export default function AssetDetailPage() {
           <h1 className="text-lg font-bold md:text-xl">{asset.name}</h1>
           <p className="text-xs text-muted-foreground">{asset.assetId}</p>
         </div>
-        <Badge variant="outline" className={`ml-auto ${statusColors[asset.status]}`}>{asset.status.replace('_', ' ')}</Badge>
+        <Badge variant="outline" className={`ml-auto ${statusColors[asset.status]}`}>{asset.status.replace(/_/g, ' ')}</Badge>
       </div>
 
+      {/* Location breadcrumb */}
       {asset.locationBreadcrumb && (
         <div className="rounded-lg bg-muted p-3 text-xs flex items-start gap-2">
           <MapPin className="h-4 w-4 text-accent shrink-0 mt-0.5" />
@@ -135,6 +108,89 @@ export default function AssetDetailPage() {
         </Card>
       </div>
 
+      {/* Asset Details Upload section */}
+      {!isThirdParty && asset.assetDetails && (
+        <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen}>
+          <Card>
+            <CollapsibleTrigger className="w-full">
+              <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors pb-2">
+                <CardTitle className="text-base flex items-center justify-between">
+                  <span className="flex items-center gap-2"><FileText className="h-4 w-4 text-accent" /> Asset Details</span>
+                  {detailsOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 text-sm">
+                  {Object.entries({
+                    'Sub Number': asset.assetDetails.subNumber,
+                    'Asset Class': asset.assetDetails.assetClass,
+                    'Cost Center': asset.assetDetails.costCenter,
+                    'Int. Order': asset.assetDetails.intOrder,
+                    'Useful Life': asset.assetDetails.usefulLife,
+                    'Periods': asset.assetDetails.usefulLifeInPeriods,
+                    'Supplier': asset.assetDetails.supplier,
+                    'Currency': asset.assetDetails.currency,
+                    'Capitalized On': asset.assetDetails.capitalizedOn,
+                    'APC FY Start': asset.assetDetails.apcFyStart,
+                    'Acquisition': asset.assetDetails.acquisition,
+                    'Current APC': asset.assetDetails.currentApc,
+                    'Dep. FY Start': asset.assetDetails.depFyStart,
+                    'Dep. for Year': asset.assetDetails.depForYear,
+                    'Accumulated Dep.': asset.assetDetails.accumulDep,
+                    'Bk. Val. FY Start': asset.assetDetails.bkValFyStart,
+                    'Current Book Value': asset.assetDetails.currBkVal,
+                  }).filter(([, v]) => v).map(([label, value]) => (
+                    <div key={label} className="flex justify-between py-1 border-b border-border/50">
+                      <span className="text-muted-foreground text-xs">{label}</span>
+                      <span className="font-medium text-xs">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+      )}
+
+      {/* WFH Details section */}
+      {!isThirdParty && asset.wfhDetails && (
+        <Collapsible open={wfhOpen} onOpenChange={setWfhOpen}>
+          <Card>
+            <CollapsibleTrigger className="w-full">
+              <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors pb-2">
+                <CardTitle className="text-base flex items-center justify-between">
+                  <span className="flex items-center gap-2"><Home className="h-4 w-4 text-accent" /> WFH Details</span>
+                  {wfhOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  {Object.entries({
+                    'Serial Number': asset.wfhDetails.serialNumber,
+                    'Location': asset.wfhDetails.location,
+                    'Entity': asset.wfhDetails.entity,
+                    'Asset': asset.wfhDetails.asset,
+                    'UID': asset.wfhDetails.uid,
+                    'User Name': asset.wfhDetails.userName,
+                    'User Email': asset.wfhDetails.userEmailId,
+                  }).filter(([, v]) => v).map(([label, value]) => (
+                    <div key={label} className="flex justify-between py-1 border-b border-border/50">
+                      <span className="text-muted-foreground text-xs">{label}</span>
+                      <span className="font-medium text-xs">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+      )}
+
+      {/* History - hidden for third-party */}
       {!isThirdParty && (
         <Card>
           <CardHeader className="pb-2">
@@ -150,9 +206,12 @@ export default function AssetDetailPage() {
                       {actionIcons[h.action] || '📋'}
                     </div>
                     <div className="pt-1">
-                      <p className="text-sm font-medium">{h.action}</p>
+                      <p className="text-sm font-medium">{h.description}</p>
+                      {h.fromLocation && h.toLocation && (
+                        <p className="text-xs text-muted-foreground">{h.fromLocation} → {h.toLocation}</p>
+                      )}
                       <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(h.changed_at), { addSuffix: true })}
+                        {h.performedByName} · {formatDistanceToNow(new Date(h.timestamp), { addSuffix: true })}
                       </p>
                     </div>
                   </div>
@@ -165,4 +224,3 @@ export default function AssetDetailPage() {
     </div>
   );
 }
-

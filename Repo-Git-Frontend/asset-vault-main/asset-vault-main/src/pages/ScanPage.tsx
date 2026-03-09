@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,9 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Camera, Keyboard, QrCode, Printer, ScanLine, AlertCircle } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useToast } from '@/hooks/use-toast';
-import api from '@/services/api';
-import { API_ENDPOINTS } from '@/config/api';
-import type { Asset } from '@/types';
+import { mockAssets } from '@/data/mockData';
+import { useNavigate } from 'react-router-dom';
 
 export default function ScanPage() {
   const [tab, setTab] = useState('scan');
@@ -70,20 +68,13 @@ export default function ScanPage() {
     return () => { safeStop(); };
   }, []);
 
-  const handleScanResult = async (code: string) => {
-    try {
-      const { data } = await api.get<Asset[]>(API_ENDPOINTS.assets.list, {
-        params: { search: code },
-      });
-      const asset = data[0];
-      if (asset) {
-        toast({ title: 'Asset Found!', description: asset.name });
-        navigate(`/assets/${asset.id}`);
-      } else {
-        toast({ title: 'Asset Not Found', description: `No asset found for code: ${code}`, variant: 'destructive' });
-      }
-    } catch {
-      toast({ title: 'Error', description: 'Unable to search assets.', variant: 'destructive' });
+  const handleScanResult = (code: string) => {
+    const asset = mockAssets.find((a) => a.assetId === code || a.tagNumber === code || a.serialNumber === code || a.id === code);
+    if (asset) {
+      toast({ title: 'Asset Found!', description: asset.name });
+      navigate(`/assets/${asset.id}`);
+    } else {
+      toast({ title: 'Asset Not Found', description: `No asset found for code: ${code}`, variant: 'destructive' });
     }
   };
 
