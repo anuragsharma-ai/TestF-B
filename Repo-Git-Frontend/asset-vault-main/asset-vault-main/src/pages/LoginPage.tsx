@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, Mail, ArrowRight, Loader2 } from 'lucide-react';
+import { Monitor, Mail, ArrowRight, Loader2, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -91,19 +91,19 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary">
-            <Shield className="h-8 w-8 text-primary-foreground" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-primary shadow-lg">
+            <Monitor className="h-8 w-8 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Asset Reconciliation</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Secure Bank Asset Management System</p>
+          <h1 className="text-3xl font-display text-foreground">Asset Vault</h1>
+          <p className="mt-2 text-sm text-muted-foreground font-body">Secure Asset Management & Reconciliation</p>
         </div>
 
-        <Card>
+        <Card className="border-border shadow-lg">
           <CardHeader className="text-center">
-            <CardTitle className="text-lg">{step === 'email' ? 'Sign In' : 'Verify OTP'}</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-xl font-display">{step === 'email' ? 'Sign In' : 'Verify OTP'}</CardTitle>
+            <CardDescription className="font-body">
               {step === 'email'
-                ? 'Enter your authorized email'
+                ? 'Enter your authorized email to get started'
                 : `Enter the 6-digit code sent to ${email}`}
             </CardDescription>
           </CardHeader>
@@ -115,31 +115,23 @@ export default function LoginPage() {
                     <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       type="email"
-                      placeholder="your.name@bank.com"
+                      placeholder="your.name@company.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()}
-                      className="pl-10 h-12"
+                      className="pl-10 h-12 font-body"
                       autoFocus
                     />
                   </div>
-                  {error && <p className="text-sm text-destructive">{error}</p>}
-                  <Button onClick={handleSendOtp} disabled={!email || isLoading} className="w-full h-12 text-base">
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRight className="mr-2 h-4 w-4" />}
-                    Send OTP
-                  </Button>
-                  <div className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">
-                    <p className="font-medium mb-1">Demo Accounts:</p>
-                    <p>admin@bank.com (Super Admin)</p>
-                    <p>branch@bank.com (Location Admin)</p>
-                    <p>employee@bank.com (Employee)</p>
-                    <p>operator@vendor.com (Third-Party Operator)</p>
-                    <p className="mt-1">OTP: <span className="font-mono font-bold">123456</span></p>
-                  </div>
+                   {error && <p className="text-sm text-destructive font-body">{error}</p>}
+                   <Button onClick={handleSendOtp} disabled={!email || isLoading} className="w-full h-12 text-base font-body font-semibold">
+                     {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRight className="mr-2 h-4 w-4" />}
+                     Send OTP
+                   </Button>
                 </motion.div>
               ) : (
                 <motion.div key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-                  <div className="flex justify-center gap-2">
+                  <div className="flex justify-center gap-2.5">
                     {otp.map((digit, i) => (
                       <Input
                         key={i}
@@ -150,21 +142,21 @@ export default function LoginPage() {
                         value={digit}
                         onChange={(e) => handleOtpChange(i, e.target.value)}
                         onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                        className="h-14 w-12 text-center text-xl font-bold"
+                        className="h-14 w-12 text-center text-xl font-bold font-body border-2 focus:border-primary focus:ring-primary/20"
                         autoFocus={i === 0}
                       />
                     ))}
                   </div>
-                  {error && <p className="text-center text-sm text-destructive">{error}</p>}
-                  <Button onClick={handleVerify} disabled={otp.join('').length < 6 || isLoading} className="w-full h-12 text-base">
+                  {error && <p className="text-center text-sm text-destructive font-body">{error}</p>}
+                  <Button onClick={handleVerify} disabled={otp.join('').length < 6 || isLoading} className="w-full h-12 text-base font-body font-semibold">
                     {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Verify & Sign In
                   </Button>
-                  <div className="flex items-center justify-between text-sm">
-                    <button onClick={() => { setStep('email'); setError(''); }} className="text-accent hover:underline">
+                  <div className="flex items-center justify-between text-sm font-body">
+                    <button onClick={() => { setStep('email'); setError(''); }} className="text-primary hover:underline font-semibold">
                       ← Change email
                     </button>
-                    <button onClick={handleResend} disabled={countdown > 0} className={countdown > 0 ? 'text-muted-foreground' : 'text-accent hover:underline'}>
+                    <button onClick={handleResend} disabled={countdown > 0} className={`font-semibold ${countdown > 0 ? 'text-muted-foreground' : 'text-primary hover:underline'}`}>
                       {countdown > 0 ? `Resend in ${countdown}s` : 'Resend OTP'}
                     </button>
                   </div>

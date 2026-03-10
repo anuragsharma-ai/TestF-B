@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,13 +6,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { mockSubmissions } from '@/data/mockData';
 import { ThirdPartySubmission } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle2, XCircle, AlertCircle, Clock, MapPin } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, Clock, MapPin, Eye, QrCode } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useIsMobile } from '@/hooks/use-mobile';
-import api from '@/services/api';
-import { API_ENDPOINTS } from '@/config/api';
 
 const statusConfig: Record<string, { color: string; label: string }> = {
   pending: { color: 'bg-warning/10 text-warning border-warning/20', label: 'Pending' },
@@ -29,17 +27,8 @@ export default function AdminSubmissionsPage() {
   const [actionType, setActionType] = useState<'approve' | 'reject' | 'correction' | null>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const queryClient = useQueryClient();
 
-  const { data: submissions = [], isLoading, isError } = useQuery<ThirdPartySubmission[]>({
-    queryKey: ['third-party-submissions'],
-    queryFn: async () => {
-      const { data } = await api.get(API_ENDPOINTS.thirdParty.submissions);
-      return Array.isArray(data) ? data : (data?.results ?? []);
-    },
-  });
-
-  const filtered = filter === 'all' ? submissions : submissions.filter((s) => s.status === filter);
+  const filtered = filter === 'all' ? mockSubmissions : mockSubmissions.filter((s) => s.status === filter);
 
   const handleAction = (type: 'approve' | 'reject' | 'correction', sub: ThirdPartySubmission) => {
     setSelectedSub(sub);
@@ -47,48 +36,29 @@ export default function AdminSubmissionsPage() {
     setReviewNotes('');
   };
 
-  const confirmAction = async () => {
+  const confirmAction = () => {
     if (!actionType || !selectedSub) return;
     const labels = { approve: 'Approved', reject: 'Rejected', correction: 'Correction Requested' };
-    try {
-      if (actionType === 'approve') {
-        await api.post(API_ENDPOINTS.admin.approveAsset(selectedSub.id));
-      } else if (actionType === 'reject') {
-        await api.post(API_ENDPOINTS.admin.rejectAsset(selectedSub.id), { reviewNotes: reviewNotes || undefined });
-      } else if (actionType === 'correction') {
-        await api.post(`${API_ENDPOINTS.thirdParty.submissions}${selectedSub.id}/request-correction/`, {
-          reviewNotes: reviewNotes || undefined,
-        });
-      }
-      await queryClient.invalidateQueries({ queryKey: ['third-party-submissions'] });
-      toast({
-        title: `Submission ${labels[actionType]}`,
-        description: `${selectedSub.id} has been ${labels[actionType].toLowerCase()}.`,
-      });
-    } catch {
-      toast({
-        title: 'Action failed',
-        description: 'Could not update submission status.',
-        variant: 'destructive',
-      });
-    } finally {
-      setSelectedSub(null);
-      setActionType(null);
-    }
+    toast({
+      title: `Submission ${labels[actionType]}`,
+      description: `${selectedSub.id} has been ${labels[actionType].toLowerCase()}.`,
+    });
+    setSelectedSub(null);
+    setActionType(null);
   };
 
   const renderMobileCard = (sub: ThirdPartySubmission) => {
-    const cfg = statusConfig[sub.status] ?? statusConfig.pending;
+    const cfg = statusConfig[sub.status];
     return (
       <Card key={sub.id}>
         <CardContent className="p-4 space-y-3">
           <div className="flex items-start justify-between">
             <div className="min-w-0 flex-1">
               <p className="font-medium text-sm">
-                {sub.type === 'verification' ? `Verify: ${sub.assetId ?? '-'}` : `New: ${sub.assetName || sub.tempRefId || '-'}`}
+                {sub.type === 'verification' ? `Verify: ${sub.assetId}` : `New: ${sub.assetName || sub.tempRefId}`}
               </p>
               <p className="text-xs text-muted-foreground">
-                by {sub.submittedByName ?? '-'} · {sub.submittedAt ? formatDistanceToNow(new Date(sub.submittedAt), { addSuffix: true }) : '-'}
+                by {sub.submittedByName} · {formatDistanceToNow(new Date(sub.submittedAt), { addSuffix: true })}
               </p>
             </div>
             <Badge variant="outline" className={`text-[10px] ${cfg.color}`}>{cfg.label}</Badge>
@@ -96,7 +66,7 @@ export default function AdminSubmissionsPage() {
 
           <div className="text-xs flex items-start gap-1.5">
             <MapPin className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
-            <span className="text-muted-foreground leading-relaxed line-clamp-2">{sub.locationBreadcrumb ?? '-'}</span>
+            <span className="text-muted-foreground leading-relaxed line-clamp-2">{sub.locationBreadcrumb}</span>
           </div>
 
           {sub.status === 'pending' && (
@@ -132,13 +102,10 @@ export default function AdminSubmissionsPage() {
 
       {isMobile ? (
         <div className="space-y-3">
-          {isLoading && (
-            <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">Loading submissions...</CardContent></Card>
-          )}
-          {!isLoading && (isError || filtered.length === 0) && (
+          {filtered.length === 0 && (
             <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">No submissions.</CardContent></Card>
           )}
-          {!isLoading && !isError && filtered.map(renderMobileCard)}
+          {filtered.map(renderMobileCard)}
         </div>
       ) : (
         <Card>
@@ -155,8 +122,8 @@ export default function AdminSubmissionsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {!isLoading && !isError && filtered.map((sub) => {
-                const cfg = statusConfig[sub.status] ?? statusConfig.pending;
+              {filtered.map((sub) => {
+                const cfg = statusConfig[sub.status];
                 return (
                   <TableRow key={sub.id}>
                     <TableCell className="font-mono text-xs">{sub.id}</TableCell>
@@ -166,11 +133,11 @@ export default function AdminSubmissionsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm">
-                      {sub.type === 'verification' ? (sub.assetId ?? '-') : (sub.assetName || sub.tempRefId || '-')}
+                      {sub.type === 'verification' ? sub.assetId : (sub.assetName || sub.tempRefId)}
                     </TableCell>
-                    <TableCell className="text-sm">{sub.submittedByName ?? '-'}</TableCell>
-                    <TableCell className="text-xs max-w-[200px] truncate" title={sub.locationBreadcrumb ?? ''}>
-                      {sub.locationBreadcrumb ?? '-'}
+                    <TableCell className="text-sm">{sub.submittedByName}</TableCell>
+                    <TableCell className="text-xs max-w-[200px] truncate" title={sub.locationBreadcrumb}>
+                      {sub.locationBreadcrumb}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={`text-xs ${cfg.color}`}>{cfg.label}</Badge>
@@ -251,4 +218,3 @@ export default function AdminSubmissionsPage() {
     </div>
   );
 }
-

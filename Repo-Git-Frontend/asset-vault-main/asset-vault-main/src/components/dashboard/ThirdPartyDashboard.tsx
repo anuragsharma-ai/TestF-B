@@ -1,15 +1,12 @@
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScanLine, ClipboardList, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { mockSubmissions } from '@/data/mockData';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
-import api from '@/services/api';
-import { API_ENDPOINTS } from '@/config/api';
-import type { ThirdPartySubmission } from '@/types';
 
 const statusConfig: Record<string, { color: string; icon: any; label: string }> = {
   pending: { color: 'bg-warning/10 text-warning border-warning/20', icon: Clock, label: 'Pending' },
@@ -21,15 +18,7 @@ const statusConfig: Record<string, { color: string; icon: any; label: string }> 
 export default function ThirdPartyDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: submissions = [] } = useQuery<ThirdPartySubmission[]>({
-    queryKey: ['third-party-submissions'],
-    queryFn: async () => {
-      const { data } = await api.get<ThirdPartySubmission[]>(API_ENDPOINTS.thirdParty.submissions);
-      return data;
-    },
-  });
-
-  const mySubmissions = submissions.filter((s) => s.submittedBy === user?.id);
+  const mySubmissions = mockSubmissions.filter((s) => s.submittedBy === user?.id);
 
   const stats = [
     { label: 'Submitted', value: mySubmissions.length, color: 'text-accent' },

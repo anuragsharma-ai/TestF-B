@@ -1,15 +1,13 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { mockSubmissions } from '@/data/mockData';
 import { useAuth } from '@/contexts/AuthContext';
 import { Clock, CheckCircle2, XCircle, AlertCircle, MapPin, Camera } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ThirdPartySubmission } from '@/types';
-import api from '@/services/api';
-import { API_ENDPOINTS } from '@/config/api';
 
 const statusConfig: Record<string, { color: string; icon: any; label: string }> = {
   pending: { color: 'bg-warning/10 text-warning border-warning/20', icon: Clock, label: 'Pending' },
@@ -22,15 +20,7 @@ export default function SubmissionsPage() {
   const { user } = useAuth();
   const [filter, setFilter] = useState('all');
 
-  const { data: submissions = [], isLoading, isError } = useQuery<ThirdPartySubmission[]>({
-    queryKey: ['third-party-submissions'],
-    queryFn: async () => {
-      const { data } = await api.get<ThirdPartySubmission[]>(API_ENDPOINTS.thirdParty.submissions);
-      return data;
-    },
-  });
-
-  const mySubmissions = submissions.filter((s) => s.submittedBy === user?.id);
+  const mySubmissions = mockSubmissions.filter((s) => s.submittedBy === user?.id);
   const filtered = filter === 'all' ? mySubmissions : mySubmissions.filter((s) => s.status === filter);
 
   const renderSubmission = (sub: ThirdPartySubmission) => {
@@ -96,21 +86,14 @@ export default function SubmissionsPage() {
       </Tabs>
 
       <div className="space-y-3">
-        {isLoading && (
-          <Card>
-            <CardContent className="p-8 text-center text-sm text-muted-foreground">
-              Loading submissions...
-            </CardContent>
-          </Card>
-        )}
-        {!isLoading && (isError || filtered.length === 0) && (
+        {filtered.length === 0 && (
           <Card>
             <CardContent className="p-8 text-center text-sm text-muted-foreground">
               No submissions found.
             </CardContent>
           </Card>
         )}
-        {!isLoading && !isError && filtered.map(renderSubmission)}
+        {filtered.map(renderSubmission)}
       </div>
     </div>
   );

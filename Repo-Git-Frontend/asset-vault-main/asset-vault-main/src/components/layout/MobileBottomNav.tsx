@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, ScanLine, Package, UserCircle, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, ScanLine, Package, UserCircle, ClipboardList, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -20,6 +20,7 @@ export default function MobileBottomNav() {
         { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
         { label: 'Scan', icon: ScanLine, path: '/scan' },
         { label: 'My Assets', icon: Package, path: '/assets' },
+        ...(user?.role === 'employee' ? [{ label: 'Verify', icon: ShieldCheck, path: '/verify' }] : []),
         { label: 'Profile', icon: UserCircle, path: '/profile' },
       ];
 
@@ -33,8 +34,8 @@ export default function MobileBottomNav() {
               key={tab.path}
               onClick={() => navigate(tab.path)}
               className={cn(
-                'flex flex-col items-center gap-0.5 px-3 py-2 text-xs transition-colors',
-                active ? 'text-accent' : 'text-muted-foreground'
+                'flex flex-col items-center gap-0.5 px-3 py-2 text-xs transition-colors font-body',
+                active ? 'text-primary' : 'text-muted-foreground'
               )}
             >
               <tab.icon className={cn('h-5 w-5', active && 'stroke-[2.5]')} />

@@ -1,13 +1,35 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { mockDashboardSummary, mockLocations } from '@/data/mockData';
+import { mockDashboardSummary, mockLocations, mockAssets } from '@/data/mockData';
 import { Package, ClipboardCheck, CheckCircle2, AlertTriangle, Clock } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { formatDistanceToNow } from 'date-fns';
+import { downloadAsExcel } from '@/lib/exportUtils';
+import ChartDownloadBtn from './ChartDownloadBtn';
+import { useMemo } from 'react';
+
+const COLORS = ['hsl(199, 89%, 48%)', 'hsl(142, 71%, 45%)', 'hsl(38, 92%, 50%)', 'hsl(0, 72%, 51%)', 'hsl(215, 60%, 24%)', 'hsl(280, 60%, 50%)', 'hsl(160, 60%, 40%)', 'hsl(30, 80%, 55%)'];
 
 export default function AdminDashboard() {
   const data = mockDashboardSummary;
   const branch = mockLocations[0];
   const progress = Math.round((branch.verifiedAssets / branch.totalAssets) * 100);
+
+  // Category breakdown for this branch
+  const branchAssets = mockAssets.filter((a) => a.locationId === branch.id);
+  const categoryData = useMemo(() => {
+    const map: Record<string, { total: number; verified: number; pending: number; value: number }> = {};
+    branchAssets.forEach((a) => {
+      if (!map[a.category]) map[a.category] = { total: 0, verified: 0, pending: 0, value: 0 };
+      map[a.category].total++;
+      map[a.category].value += a.purchaseValue;
+      if (a.reconciliationStatus === 'verified') map[a.category].verified++;
+      else map[a.category].pending++;
+    });
+    return Object.entries(map).map(([name, d]) => ({ name, ...d }));
+  }, [branchAssets]);
+
+  const categoryPieData = categoryData.map((c) => ({ name: c.name, value: c.total }));
 
   return (
     <div className="space-y-4">
@@ -42,6 +64,56 @@ export default function AdminDashboard() {
           <Progress value={progress} className="h-3" />
         </CardContent>
       </Card>
+
+      {/* Category-wise Dashboard */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Assets by Category</CardTitle>
+              <ChartDownloadBtn onClick={() => downloadAsExcel(
+                categoryData.map((d) => ({ Category: d.name, Total: d.total, Verified: d.verified, Pending: d.pending })),
+                'branch-assets-by-category'
+              )} />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={categoryData} layout="vertical">
+                <XAxis type="number" tick={{ fontSize: 11 }} />
+                <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={90} />
+                <Tooltip />
+                <Bar dataKey="verified" stackId="a" fill="hsl(142, 71%, 45%)" />
+                <Bar dataKey="pending" stackId="a" fill="hsl(38, 92%, 50%)" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Category Distribution</CardTitle>
+              <ChartDownloadBtn onClick={() => downloadAsExcel(
+                categoryPieData.map((d) => ({ Category: d.name, 'Asset Count': d.value })),
+                'branch-category-distribution'
+              )} />
+            </div>
+          </CardHeader>
+          <CardContent className="flex items-center justify-center">
+            <ResponsiveContainer width="100%" height={240}>
+              <PieChart>
+                <Pie data={categoryPieData} cx="50%" cy="50%" innerRadius={45} outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                  {categoryPieData.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card>
         <CardHeader className="pb-2">

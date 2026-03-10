@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,21 +7,19 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { ScanLine, Package, MapPin, Camera, CheckCircle2, ArrowRight, ArrowLeft, Loader2, AlertTriangle, PlusCircle } from 'lucide-react';
-import { buildBreadcrumb } from '@/data/mockData';
+import { mockAssets } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import LocationHierarchySelector from '@/components/LocationHierarchySelector';
-import { LocationPath, Asset } from '@/types';
-import api from '@/services/api';
-import { API_ENDPOINTS } from '@/config/api';
+import { LocationPath } from '@/types';
 
 type Step = 'scan' | 'details' | 'location' | 'photo' | 'confirm' | 'success' | 'not_found' | 'add_asset';
 
 export default function ReconciliationPage() {
   const [step, setStep] = useState<Step>('scan');
   const [code, setCode] = useState('');
-  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  const [selectedAsset, setSelectedAsset] = useState<typeof mockAssets[0] | null>(null);
   const [locationPath, setLocationPath] = useState<LocationPath>({});
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,8 +27,8 @@ export default function ReconciliationPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isThirdParty = user?.role === 'third_party';
-  const queryClient = useQueryClient();
 
+  // New asset form fields (third-party)
   const [newAssetName, setNewAssetName] = useState('');
   const [newSerialNumber, setNewSerialNumber] = useState('');
   const [newAssetType, setNewAssetType] = useState('');
@@ -39,73 +36,36 @@ export default function ReconciliationPage() {
   const steps: Step[] = ['scan', 'details', 'location', 'photo', 'confirm', 'success'];
   const currentIndex = steps.indexOf(step);
 
-  const handleSearch = async () => {
-    if (!code.trim()) return;
-    try {
-      const { data } = await api.get<Asset[]>(API_ENDPOINTS.assets.list, {
-        params: { search: code.trim() },
-      });
-      const asset = data[0];
-      if (asset) {
-        setSelectedAsset(asset);
-        setStep('details');
-      } else if (isThirdParty) {
+  const handleSearch = () => {
+    const asset = mockAssets.find((a) => a.assetId === code || a.tagNumber === code || a.serialNumber === code);
+    if (asset) {
+      setSelectedAsset(asset);
+      setStep('details');
+    } else {
+      if (isThirdParty) {
         setStep('not_found');
       } else {
         toast({ title: 'Not Found', description: 'No asset matches that code.', variant: 'destructive' });
       }
-    } catch {
-      toast({ title: 'Error', description: 'Unable to search assets.', variant: 'destructive' });
     }
   };
 
   const handleSubmit = async () => {
-    if (!selectedAsset) return;
     setIsSubmitting(true);
-    try {
-      await api.post(API_ENDPOINTS.reconciliation.submit, {
-        asset: selectedAsset.id,
-        location: null,
-        location_confirmed: true,
-        notes,
-        photo_url: '',
-      });
-      await queryClient.invalidateQueries({ queryKey: ['assets'] });
-      setStep('success');
-    } catch {
-      toast({ title: 'Submission Failed', description: 'Could not submit reconciliation.', variant: 'destructive' });
-    } finally {
-      setIsSubmitting(false);
-    }
+    await new Promise((r) => setTimeout(r, 1500));
+    setIsSubmitting(false);
+    setStep('success');
   };
 
   const handleSubmitNewAsset = async () => {
     setIsSubmitting(true);
-    try {
-      const locationBreadcrumb =
-        Object.keys(locationPath).length > 0 ? buildBreadcrumb(locationPath) : '';
-      await api.post(API_ENDPOINTS.thirdParty.submissions, {
-        type: 'new_asset',
-        assetName: newAssetName,
-        serialNumber: newSerialNumber,
-        assetType: newAssetType,
-        tempRefId: `TEMP-REF-${String(Math.floor(Math.random() * 9999)).padStart(4, '0')}`,
-        locationBreadcrumb,
-        locationPath,
-        photoUrl: '/placeholder.svg',
-        remarks: notes,
-      });
-      await queryClient.invalidateQueries({ queryKey: ['third-party-submissions'] });
-      toast({
-        title: 'Asset Submitted for Approval',
-        description: 'A temporary reference ID has been generated. Admin will review.',
-      });
-      setStep('success');
-    } catch {
-      toast({ title: 'Submission Failed', description: 'Could not submit new asset.', variant: 'destructive' });
-    } finally {
-      setIsSubmitting(false);
-    }
+    await new Promise((r) => setTimeout(r, 1500));
+    setIsSubmitting(false);
+    toast({
+      title: 'Asset Submitted for Approval',
+      description: 'A temporary reference ID has been generated. Admin will review.',
+    });
+    setStep('success');
   };
 
   const resetFlow = () => {
@@ -398,4 +358,3 @@ export default function ReconciliationPage() {
     </div>
   );
 }
-

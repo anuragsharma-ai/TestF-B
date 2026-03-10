@@ -18,6 +18,7 @@ import ReportsPage from "@/pages/ReportsPage";
 import ProfilePage from "@/pages/ProfilePage";
 import SubmissionsPage from "@/pages/SubmissionsPage";
 import AdminSubmissionsPage from "@/pages/AdminSubmissionsPage";
+import EmployeeVerificationPage from "@/pages/EmployeeVerificationPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/verify" element={<ProtectedLayout allowedRoles={['employee']}><EmployeeVerificationPage /></ProtectedLayout>} />
             <Route path="/" element={<ProtectedLayout><DashboardPage /></ProtectedLayout>} />
             <Route path="/assets" element={<ProtectedLayout allowedRoles={['super_admin', 'location_admin', 'employee']}><AssetsPage /></ProtectedLayout>} />
             <Route path="/assets/:id" element={<ProtectedLayout><AssetDetailPage /></ProtectedLayout>} />

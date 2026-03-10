@@ -51,6 +51,45 @@ export interface LocationPath {
   [key: string]: string; // level -> locationNodeId
 }
 
+export interface AssetDetails {
+  subNumber?: string;
+  assetClass?: string;
+  costCenter?: string;
+  intOrder?: string;
+  assetDescription?: string;
+  usefulLife?: string;
+  usefulLifeInPeriods?: string;
+  supplier?: string;
+  currency?: string;
+  capitalizedOn?: string;
+  apcFyStart?: string;
+  acquisition?: string;
+  retirement?: string;
+  transfer?: string;
+  postCapital?: string;
+  currentApc?: string;
+  depFyStart?: string;
+  depForYear?: string;
+  depRetirement?: string;
+  depTransfer?: string;
+  writeUps?: string;
+  depPostCap?: string;
+  accumulDep?: string;
+  bkValFyStart?: string;
+  currBkVal?: string;
+  deactivationOn?: string;
+}
+
+export interface WfhDetails {
+  serialNumber?: string;
+  location?: string;
+  entity?: string;
+  asset?: string;
+  uid?: string;
+  userName?: string;
+  userEmailId?: string;
+}
+
 export interface Asset {
   id: string;
   assetId: string;
@@ -59,6 +98,9 @@ export interface Asset {
   name: string;
   description: string;
   category: string;
+  subAssetType?: string;
+  entity?: string;
+  subLocation?: string;
   locationId: string;
   locationName: string;
   locationPath?: LocationPath;
@@ -74,6 +116,8 @@ export interface Asset {
   lastVerified?: string;
   createdAt: string;
   updatedAt: string;
+  assetDetails?: AssetDetails;
+  wfhDetails?: WfhDetails;
 }
 
 export interface AssetHistory {
@@ -140,3 +184,43 @@ export interface ThirdPartySubmission {
   reviewedAt?: string;
   reviewNotes?: string;
 }
+
+// ---- Column definitions for dynamic selector ----
+export interface ColumnDef {
+  key: string;
+  label: string;
+  defaultVisible: boolean;
+  group: 'basic' | 'details' | 'depreciation' | 'wfh';
+}
+
+export const ASSET_COLUMNS: ColumnDef[] = [
+  // Basic (default visible)
+  { key: 'entity', label: 'Entity', defaultVisible: true, group: 'basic' },
+  { key: 'assetId', label: 'Asset', defaultVisible: true, group: 'basic' },
+  { key: 'serialNumber', label: 'Serial Number', defaultVisible: true, group: 'basic' },
+  { key: 'category', label: 'Asset Type', defaultVisible: true, group: 'basic' },
+  { key: 'subAssetType', label: 'Sub Asset Type', defaultVisible: true, group: 'basic' },
+  { key: 'locationName', label: 'Location', defaultVisible: true, group: 'basic' },
+  { key: 'subLocation', label: 'Sub Location', defaultVisible: true, group: 'basic' },
+  { key: 'status', label: 'Status', defaultVisible: true, group: 'basic' },
+  { key: 'reconciliationStatus', label: 'Reconciliation', defaultVisible: false, group: 'basic' },
+  { key: 'assignedToName', label: 'Assigned To', defaultVisible: false, group: 'basic' },
+  { key: 'purchaseDate', label: 'Purchase Date', defaultVisible: false, group: 'basic' },
+  { key: 'purchaseValue', label: 'Purchase Value', defaultVisible: false, group: 'basic' },
+  // Asset Details
+  { key: 'costCenter', label: 'Cost Center', defaultVisible: false, group: 'details' },
+  { key: 'supplier', label: 'Supplier', defaultVisible: false, group: 'details' },
+  { key: 'currency', label: 'Currency', defaultVisible: false, group: 'details' },
+  { key: 'assetDescription', label: 'Asset Description', defaultVisible: false, group: 'details' },
+  { key: 'usefulLife', label: 'Useful Life', defaultVisible: false, group: 'details' },
+  { key: 'capitalizedOn', label: 'Capitalized On', defaultVisible: false, group: 'details' },
+  // Depreciation
+  { key: 'depFyStart', label: 'Dep. FY Start', defaultVisible: false, group: 'depreciation' },
+  { key: 'depForYear', label: 'Dep. for Year', defaultVisible: false, group: 'depreciation' },
+  { key: 'accumulDep', label: 'Accumulated Dep.', defaultVisible: false, group: 'depreciation' },
+  { key: 'currBkVal', label: 'Current Book Value', defaultVisible: false, group: 'depreciation' },
+  // WFH
+  { key: 'wfhUid', label: 'WFH UID', defaultVisible: false, group: 'wfh' },
+  { key: 'wfhUserName', label: 'WFH User', defaultVisible: false, group: 'wfh' },
+  { key: 'wfhUserEmail', label: 'WFH Email', defaultVisible: false, group: 'wfh' },
+];
